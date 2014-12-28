@@ -4,9 +4,14 @@ import socket
 import select
 import sys
 import Protocol
+from Player import Player, Board
+from copy import deepcopy
 
 EXIT_ERROR = 1
 BOARD_SIZE = 10
+MISS_CHAR = 'X'
+HIT_CHAR = 'H'
+SHIP_CHAR = '0'
 
 class Client:
 
@@ -17,6 +22,7 @@ class Client:
         
         self.player_name = player_name
         self.opponent_name = ""
+        self.player = Player(player_name, parse_ships(player_ships))
 
         self.socket_to_server = None
 
@@ -148,6 +154,13 @@ class Client:
     letters = list(map(chr, range(65, 65 + BOARD_SIZE)))
         
     def print_board(self):
+        hits = deepcopy(self.player.board.hits)
+        miss = deepcopy(self.player.board.miss)
+        ships = deepcopy(self.player.board.ships)
+
+        op_hits = deepcopy(self.player.op_board.hits)
+        op_miss = deepcopy(self.player.op_board.miss)
+
         """
         TODO: use this method for the prints of the board. You should figure
         out how to modify it in order to properly display the right boards.
@@ -170,12 +183,14 @@ class Client:
         for i in range(BOARD_SIZE):
             print "%-3s" % Client.letters[i],
             for j in range(BOARD_SIZE):
-                print "%-3s" % '*',
+                place = (Client.letters[i],j)
+                print "%-3s" % self.get_char(place, hits, miss, ships ),
 
             print(" |||   "),
             print "%-3s" % Client.letters[i],
             for j in range(BOARD_SIZE):
-                print "%-3s" % '*',
+                place = (Client.letters[i],j)
+                print "%-3s" % self.get_char(place, op_hits, op_miss, [] ),
 
             print
         
@@ -183,7 +198,10 @@ class Client:
          
 
 
+    def get_char(place , hits, miss, ships):
 
+        return HIT_CHAR if place in hits else MISS_CHAR if place in miss else SHIP_CHAR if place in \
+                                                                                    ships else '*'
 
     def run_client(self):
 
@@ -203,7 +221,6 @@ class Client:
 
 
 def main():
-  
 
     client = Client(sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4])
     client.connect_to_server()
