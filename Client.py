@@ -6,6 +6,7 @@ import sys
 import Protocol
 from Player import Player, Board
 from copy import deepcopy
+import re
 
 EXIT_ERROR = 1
 BOARD_SIZE = 10
@@ -219,7 +220,15 @@ class Client:
 def parse_ships(ship_path):
     ships = []
     with open(ship_path, 'r') as f:
-        line = f.readline()
+
+        for line in f:
+            ship = set()
+            places = line.split(',')
+            for place in places:
+                match = re.match('([A-Z])(\d+)' , place)
+                ship.add((match.group(1),match.group(2)))
+            ships.append(ship)
+        
 
 
 
