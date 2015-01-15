@@ -220,7 +220,7 @@ def parse_ships(ship_path):
     ships = []
     with open(ship_path, 'r') as f:
         line = f.readline()
-        
+
 
 
 
