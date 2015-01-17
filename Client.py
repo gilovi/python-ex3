@@ -130,8 +130,14 @@ class Client:
             
             
         if "start" in msg: self.__start_game(msg)
-        
-        
+
+        else:
+            (who, what, where) = msg.split(':')
+        if what == 'EXIT':
+            print '*** Server is down ***' if who == 'server' else  'Your opponent has disconnected. You win!\n\n*** Goodbye... ***'
+            sys.exit
+
+
         # TODO - continue (or change, it's up to you) implementation of this method.
         pass
     
