@@ -5,46 +5,44 @@ __author__ = 'gilmor'
 
 
 class Player:
-    def __init__(self, name ,ships):
+    def __init__(self, name, ships):
         self.__name = name
         self.board = Board(ships)
         self.op_board = Board()
 
-
-    def update_results(self, place, result, board, index = None):
-        {'hit': board.add_hit ,
-         'miss': board.add_miss ,
-         'sunk': board.sunk ,
-         'lost': board.lost}.get(result)({place}, index)
+    def update_results(self, place, result, board, index=None):
+        {'HIT': board.add_hit,
+         'MISS': board.add_miss,
+         'SUNK': board.sunk,
+         'LOST': board.lost}.get(str(result))({place}, index)
 
     def defend(self, place):
         result = ''
-        hit = [i for i , ship in enumerate(self.board.unhit_ships) if place in ship]
+        hit = [i for i, ship in enumerate(self.board.unhit_ships) if place in ship]
         if hit:
             # we have a 'hit'
-            result = 'hit'
+            result = 'HIT'
             if len(self.board.unhit_ships[hit[0]]) == 1:
-                #the hit place is the last place in the ship - ship is destroyed.
-                result = 'sunk'
+                # the hit place is the last place in the ship - ship is destroyed.
+                result = 'SUNK'
                 if len(self.board.unhit_ships) == 1:
                     #this was the last ship - we lost!
-                    result = 'lost'
+                    result = 'LOST'
         else:
-            result = 'miss'
-        self.update_results(place, result, self.board , hit[0] if hit else None)
+            result = 'MISS'
+        self.update_results(place, result, self.board, hit[0] if hit else None)
         return result
 
-class Board:
 
-    def __init__(self ,ships = []):
+class Board:
+    def __init__(self, ships=[]):
         self.ships = ships
         self.unhit_ships = deepcopy(self.ships)
         self.hits = set()
         self.miss = set()
 
 
-
-    def add_hit(self, place , index):
+    def add_hit(self, place, index):
 
         """
         adds a hit to the board.
@@ -61,23 +59,21 @@ class Board:
             if self.unhit_ships[index] == set([]):
                 self.unhit_ships.pop(index)
         else:
-             #its an opponents ship.
-             index = self.add_ship_pos(place)
+            # its an opponents ship.
+            index = self.add_ship_pos(place)
 
         self.hits |= {place}
         return index
 
+    def add_miss(self, places, index):
+        """
+        adds a set of places to the missed places on the board
+        :param places: is tuples set of the places to add to the miss list
+        :param index: not used.
+        """
+        self.miss |= places
 
-    def add_miss(self, places , index):
-         """
-         adds a set of places to the missed places on the board
-         :param places: is tuples set of the places to add to the miss list
-         :param index: not used.
-         """
-         self.miss |= places
-
-
-    def sunk(self, last_place , index):
+    def sunk(self, last_place, index):
         """
         the operations that happens when a ship is sunk:
         remove the ship from self.ships add the last place to the hit list and runs a BFS to add
@@ -88,7 +84,7 @@ class Board:
         self.miss_surroundings(index)
 
 
-    def lost(self, place , index):
+    def lost(self, place, index):
         """
         the operations happens in case of loss in the game board,
         for completeness purpose (don't do anything fancy yet)
@@ -106,10 +102,10 @@ class Board:
         :return:
         """
         adjacents = self.get_adjacents(place)
-        ship_index = {i for i, ship in enumerate(self.ships) for aj in adjacents if aj in ship }
+        ship_index = {i for i, ship in enumerate(self.ships) for aj in adjacents if aj in ship}
         if ship_index:
             f_ind = ship_index.pop()
-            #if this place connects few different ships to one ship we update the ships accordingly
+            # if this place connects few different ships to one ship we update the ships accordingly
             while ship_index:
                 ind = ship_index.pop()
                 self.ships[f_ind] |= self.ships.pop(ind)
@@ -122,53 +118,53 @@ class Board:
 
         return f_ind
 
-    def get_adjacents(self , place):
+    def get_adjacents(self, place):
         int_letter = ord(place[0])
         return product(list(map(chr, range(int_letter - 1, int_letter + 2))), range(place[1] - 1,
-                                                                                    place[1] + 2 ))
+                                                                                    place[1] + 2))
         # return [(chr(ord(place[0]) - 1), place[1]) ,(chr(ord(place[0]) + 1), place[1]) ,
         # (place[0] , place[1] + 1), (place[0], place[1] - 1)]
 
     def miss_surroundings(self, index):
         ship = self.ships[index]
         missed = {adj for place in ship for adj in self.get_adjacents(place) if
-                  adj not in ship }
+                  adj not in ship}
         self.add_miss(missed, None)
 
 
-# def main():
-#     p = Player('gil',[{('A',1),('A',2),('A',3),('B',2)},{('B',11),('B',12)}])
-#     #p.defend(('C',3))
-#     #p.defend(('H',3))
-#
-#
-#     print p.defend(('B',2))
-#     print p.defend(('B',11))
-#     print p.defend(('A',1))
-#     #print p.defend(('A',5))
-#     print p.defend(('A',2))
-#     print p.defend(('A',3))
-#     print 'unhit'
-#     print p.board.unhit_ships
-#     print'miss:'
-#     print p.board.miss
-#     print 'hits'
-#     print p.board.hits
-#     print 'ships'
-#     print p.board.ships
-#
-#     p.update_results(('A',5),'miss',p.op_board)
-#     p.update_results(('B',6),'hit',p.op_board)
-#     p.update_results(('A',7),'hit',p.op_board)
-#     p.update_results(('A',6),'sunk',p.op_board)
-#     print 'unhut:'
-#     print p.op_board.unhit_ships
-#     print 'ships:'
-#     print p.op_board.ships
-#     print 'miss:'
-#     print p.op_board.miss
-#     print 'hits:'
-#     print p.op_board.hits
-#
-# if __name__ == "__main__":
-#     main()
+        # def main():
+        # p = Player('gil',[{('A','1'),('A','2'),('A','3'),('B','2')},{('B','11'),('B','12')}])
+        #     #p.defend(('C',3))
+        #     #p.defend(('H',3))
+        #
+        #
+        #     print p.defend(('B','2'))
+        #     print p.defend(('B','11'))
+        #     print p.defend(('A','1'))
+        #     #print p.defend(('A','5'))
+        #     print p.defend(('A','2'))
+        #     print p.defend(('A','3'))
+        #     print 'unhit'
+        #     print p.board.unhit_ships
+        #     print'miss:'
+        #     print p.board.miss
+        #     print 'hits'
+        #     print p.board.hits
+        #     print 'ships'
+        #     print p.board.ships
+        #
+        #     p.update_results(('A',5),'miss',p.op_board)
+        #     p.update_results(('B',6),'hit',p.op_board)
+        #     p.update_results(('A',7),'hit',p.op_board)
+        #     p.update_results(('A',6),'sunk',p.op_board)
+        #     print 'unhut:'
+        #     print p.op_board.unhit_ships
+        #     print 'ships:'
+        #     print p.op_board.ships
+        #     print 'miss:'
+        #     print p.op_board.miss
+        #     print 'hits:'
+        #     print p.op_board.hits
+        #
+        # if __name__ == "__main__":
+        #     main()

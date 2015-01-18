@@ -4,15 +4,14 @@ import socket
 import select
 import sys
 
-
 import Protocol
 
 MAX_CONNECTIONS = 2  # DO NOT CHANGE
 ERROR_EXIT = 1
+PLAYERS = 2
 
 
 class Server:
-
     def __init__(self, s_name, s_port):
         self.server_name = s_name
         self.server_port = s_port
@@ -20,10 +19,10 @@ class Server:
         self.l_socket = None
         self.players_sockets = []
         self.players_names = []
+        self.player_turn = 0
 
- 
         self.all_sockets = []
-        
+
         """
         DO NOT CHANGE
         If you want to run you program on windowns, you'll
@@ -31,8 +30,9 @@ class Server:
         to manually give input to your program). 
         """
         self.all_sockets.append(sys.stdin)
-        
 
+    def switch_turn(self):
+        self.player_turn = (self.player_turn + 1) % PLAYERS
 
     def connect_server(self):
 
@@ -45,7 +45,6 @@ class Server:
             self.l_socket = None
             sys.stderr.write(repr(msg) + '\n')
             exit(ERROR_EXIT)
-
 
         server_address = (self.server_name, int(self.server_port))
         try:
@@ -61,25 +60,26 @@ class Server:
         print "*** Server is up on %s ***" % server_address[0]
         print
 
-
     def shut_down_server(self):
-        
-        # TODO - implement this method - the server should
-        # close all sockets (of players and l_socket)
-        pass
-        
-        
+        for soc in filter(lambda (x): x is not sys.stdin, self.all_sockets):
+            soc.close()
+            print
+            print '*** Server is down ***'
 
     def __handle_standard_input(self):
-        
+
+        """
+        handles the standard input of client.
+
+        """
         msg = sys.stdin.readline().strip().upper()
-        
+
         if msg == 'EXIT':
             self.shut_down_server()
-
+            exit(0)
 
     def __handle_new_connection(self):
-        
+
         connection, client_address = self.l_socket.accept()
 
         # Request from new client to send his name
@@ -87,92 +87,108 @@ class Server:
         if eNum:
             sys.stderr.write(eMsg)
             self.shut_down_server()
-        
-        ################################################
-        
-        
+            exit(1)
+
+        # ###############################################
+
+
         # Receive new client's name
         num, msg = Protocol.recv_all(connection)
         if num == Protocol.NetworkErrorCodes.FAILURE:
             sys.stderr.write(msg)
             self.shut_down_server()
-
+            exit(1)
         if num == Protocol.NetworkErrorCodes.DISCONNECTED:
-            
             sys.stderr.write(msg)
             self.shut_down_server()
-        
+            exit(1)
+
         self.players_names.append(msg)
-        ####################################################
-        
-        ########################
-        # TODO - maybe the new server should expect something
-        # else from the client?
-        ########################
-        
-      
+
         self.players_sockets.append(connection)
         self.all_sockets.append(connection)
-        print "New client named '%s' has connected at address %s." % (msg,client_address[0])
+        print "New client named '%s' has connected at address %s." % (msg, client_address[0])
 
         if len(self.players_sockets) == 2:  # we can start the game
-            self.__set_start_game(0) 
+            self.__set_start_game(0)
             self.__set_start_game(1)
 
-
-
     def __set_start_game(self, player_num):
-
         welcome_msg = "start|turn|" + self.players_names[1] if not player_num else "start|not_turn|" + self.players_names[0]
-        
+
         eNum, eMsg = Protocol.send_all(self.players_sockets[player_num], welcome_msg)
         if eNum:
             sys.stderr.write(eMsg)
             self.shut_down_server()
-                                
-
+            exit(1)
 
     def __handle_existing_connections(self):
-        
-        # TODO - this is where you come in. You should get the message
-        # from existing connection (this will be sent through Client.py meaning
-        # that this client has just wrote something (using the Keyboard). Get 
-        # this message, parse it, and response accordingly. 
-        
-        
-        # Tip: its best if you keep a 'turn' variable, so you'd be able to
-        # know who's turn is it, and from which client you should expect a move
-        
-        pass
-                
 
-         
+        """
+        this method handles connections.
+        if somebody disconnected it informs the other. and in any other case (not error), it
+        simply sends the message to the other (completely blindly. the clients handles their
+        in/outputs on their own)
+        """
+        # find out witch socket is the active one & witch isn't
+        r_socket = select.select(self.players_sockets, [], [])[0][0]  # recived socket
+        s_socket = [soc for soc in self.players_sockets if soc not in r_socket][
+            0]  # socket to send in
+        # Receive client's message
+        num, msg = Protocol.recv_all(r_socket)
+        if num == Protocol.NetworkErrorCodes.FAILURE:
+            sys.stderr.write(msg)
+            self.shut_down_server()
+            exit(1)
+
+        if num == Protocol.NetworkErrorCodes.DISCONNECTED:
+            self.inform_disconnection(s_socket)
+
+        else:
+            eNum, eMsg = Protocol.send_all(s_socket, msg)
+            if eNum:
+                sys.stderr.write(eMsg)
+                self.shut_down_server()
+                exit(1)
+
+    def inform_disconnection(self, s_socket):
+        """
+        informs a player that the other one has disconnected
+        :param s_socket: the socket of the informed player
+        """
+        msg = 'client:EXIT:'
+        eNum, eMsg = Protocol.send_all(s_socket, msg)
+        if eNum:
+            sys.stderr.write(eMsg)
+            self.shut_down_server()
+            exit(1)
 
     def run_server(self):
 
-        
         while True:
 
-            r_sockets = select.select(self.all_sockets, [], [])[0]  # We won't use writable and exceptional sockets
+            if not self.players_sockets:
+                self.shut_down_server()
+                exit(0)
+
+            r_sockets = select.select(self.all_sockets, [], [])[
+                0]  # We won't use writable and exceptional sockets
 
             if sys.stdin in r_sockets:
                 self.__handle_standard_input()
 
             elif self.l_socket in r_sockets:
                 self.__handle_new_connection()
-                           
 
-            elif self.players_sockets[0] in r_sockets or \
-                 self.players_sockets[1] in r_sockets:
-                
-                    self.__handle_existing_connections() # TODO- implement this method
-                
+            elif self.players_sockets[0] in \
+                    r_sockets or \
+                    self.players_sockets[1] in r_sockets:
 
+                self.__handle_existing_connections()
 
 
 def main():
-
-    server = Server(sys.argv[1], int(sys.argv[2]))   
+    server = Server(sys.argv[1], int(sys.argv[2]))
     server.connect_server()
     server.run_server()
 
