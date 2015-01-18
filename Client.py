@@ -25,7 +25,7 @@ class Client:
         self.opponent_name = ""
         self.player = Player(player_name, parse_ships(player_ships))
         self.my_turn = False
-        self.last_attack = ''
+        self.last_attack = ('')
 
         self.socket_to_server = None
 
@@ -100,6 +100,7 @@ class Client:
 
         elif self.my_turn:
             self.send_attack(msg)
+            self.last_attack = tuple(msg.split(' '))
             self.my_turn = False
 
     def __handle_server_request(self):
@@ -120,18 +121,24 @@ class Client:
             (who, what, data) = msg.split(':')
 
             if what == 'EXIT':
-                self.close_client()
+				print 'Your opponent has disconnected. You win!\n'
+				self.close_client()
 
             if who == 'client':
-                result = {'attacking': self.defend,
+				result = {'attacking': self.defend,
                           'defending': self.update_result,
                           }.get(what)(data.upper())
 
-                if result:
-                    self.send_defend(result)
-                    print "It's your turn..."
-                    self.my_turn = True
-
+				if result:
+					self.send_defend(result)
+					self.my_turn = True
+					print
+					print self.opponent_name + ' plays: ' + data
+					self.print_board()
+					print "It's your turn..."
+                    
+				else:
+					self.print_board()
                     # else: #its the server talking...
                     # if  what == 'turn' :
                     #         self.my_turn = True
@@ -180,12 +187,12 @@ class Client:
     letters = list(map(chr, range(65, 65 + BOARD_SIZE)))
 
     def print_board(self):
-        hits = deepcopy(self.player.board.hits)
-        miss = deepcopy(self.player.board.miss)
-        ships = deepcopy(self.player.board.ships)
+        hits = self.player.board.hits
+        miss = self.player.board.miss
+        ships = [place for ship in (self.player.board.ships) for place in ship]
 
-        op_hits = deepcopy(self.player.op_board.hits)
-        op_miss = deepcopy(self.player.op_board.miss)
+        op_hits = self.player.op_board.hits
+        op_miss = self.player.op_board.miss
 
         """
         TODO: use this method for the prints of the board. You should figure
@@ -209,13 +216,13 @@ class Client:
         for i in range(BOARD_SIZE):
             print "%-3s" % Client.letters[i],
             for j in range(BOARD_SIZE):
-                place = (Client.letters[i], str(j))
+                place = (Client.letters[i], str(j+1))
                 print "%-3s" % self.get_char(place, hits, miss, ships),
 
             print(" |||   "),
             print "%-3s" % Client.letters[i],
             for j in range(BOARD_SIZE):
-                place = (Client.letters[i], str(j))
+                place = (Client.letters[i], str(j+1))
                 print "%-3s" % self.get_char(place, op_hits, op_miss, []),
 
             print
@@ -251,7 +258,7 @@ def parse_ships(ship_path):
                 match = re.match('([A-Z])(\d+)', place)
                 ship.add((match.group(1), match.group(2)))
             ships.append(ship)
-
+	return ships	
 
 def main():
     client = Client(sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4])

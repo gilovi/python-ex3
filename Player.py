@@ -120,8 +120,8 @@ class Board:
 
     def get_adjacents(self, place):
         int_letter = ord(place[0])
-        return product(list(map(chr, range(int_letter - 1, int_letter + 2))), range(place[1] - 1,
-                                                                                    place[1] + 2))
+        return list(product(map(chr, range(int_letter - 1, int_letter + 2)),
+			(map(chr, range(int(place[1]) - 1, int(place[1]) + 2)))))
         # return [(chr(ord(place[0]) - 1), place[1]) ,(chr(ord(place[0]) + 1), place[1]) ,
         # (place[0] , place[1] + 1), (place[0], place[1] - 1)]
 

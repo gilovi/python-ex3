@@ -132,7 +132,7 @@ class Server:
         """
         # find out witch socket is the active one & witch isn't
         r_socket = select.select(self.players_sockets, [], [])[0][0]  # recived socket
-        s_socket = [soc for soc in self.players_sockets if soc not in r_socket][
+        s_socket = [soc for soc in self.players_sockets if soc is not r_socket][
             0]  # socket to send in
         # Receive client's message
         num, msg = Protocol.recv_all(r_socket)
@@ -162,14 +162,11 @@ class Server:
             sys.stderr.write(eMsg)
             self.shut_down_server()
             exit(1)
-
+        self.shut_down_server()
+        exit(0)
     def run_server(self):
 
         while True:
-
-            if not self.players_sockets:
-                self.shut_down_server()
-                exit(0)
 
             r_sockets = select.select(self.all_sockets, [], [])[
                 0]  # We won't use writable and exceptional sockets
