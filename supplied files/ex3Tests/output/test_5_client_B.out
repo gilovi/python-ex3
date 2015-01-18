@@ -1,0 +1,24 @@
+*** Connected to server on 127.0.0.1 ***
+
+Waiting for an opponent...
+
+Welcome Mister-stays!
+You're playing against: Mister-quit.
+
+
+My Board:                                     Mister-quit's Board:
+    1   2   3   4   5   6   7   8   9   10   |||        1   2   3   4   5   6   7   8   9   10 
+A   0   0   0   *   0   0   0   *   *   *    |||    A   *   *   *   *   *   *   *   *   *   *  
+B   *   0   *   *   0   *   0   *   *   *    |||    B   *   *   *   *   *   *   *   *   *   *  
+C   *   0   *   *   0   0   0   *   *   *    |||    C   *   *   *   *   *   *   *   *   *   *  
+D   0   0   0   *   *   *   *   *   *   *    |||    D   *   *   *   *   *   *   *   *   *   *  
+E   *   *   *   *   *   *   *   *   *   *    |||    E   *   *   *   *   *   *   *   *   *   *  
+F   *   *   0   0   0   *   *   0   0   0    |||    F   *   *   *   *   *   *   *   *   *   *  
+G   *   *   0   *   *   *   *   *   0   *    |||    G   *   *   *   *   *   *   *   *   *   *  
+H   *   *   0   0   0   *   *   *   0   *    |||    H   *   *   *   *   *   *   *   *   *   *  
+I   *   *   *   *   0   *   *   *   0   *    |||    I   *   *   *   *   *   *   *   *   *   *  
+J   *   *   0   0   0   *   *   0   0   0    |||    J   *   *   *   *   *   *   *   *   *   *  
+
+Your opponent has disconnected. You win!
+
+*** Goodbye... ***

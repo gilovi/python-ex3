@@ -1,0 +1,19 @@
+process arguments:
+server:
+python Server.py 127.0.0.1 8080
+clientA:
+python Client.py 127.0.0.1 8080 Iosi ./ships/ships1.ship
+clientB:
+python Client.py 127.0.0.1 8080 Eti ./ships/ships2.ship
+
+Moves:
+ClientA: D 5
+ClientB: D 5
+ClientA: D 6
+ClientB: D 6
+ClientA: A 1
+ClientB: A 1
+ClientA: A 2
+ClientB: A 2
+ClientA: B 2
+

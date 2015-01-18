@@ -1,0 +1,11 @@
+process arguments:
+server:
+python Server.py 127.0.0.1 8080
+clientA:
+python Client.py 127.0.0.1 8080 Mister-quit ./ships/ships5.ship
+clientB:
+python Client.py 127.0.0.1 8080 Mister-stays ./ships/ships5.ship
+
+
+Moves:
+ClientA: exit

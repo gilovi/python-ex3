@@ -1,0 +1,20 @@
+process arguments:
+server:
+python Server.py 127.0.0.1 8080
+clientA:
+python Client.py 127.0.0.1 8080 Randy-Marsh ./ships/ships4.ship
+clientB:
+python Client.py 127.0.0.1 8080 Lorde ./ships/ships4.ship
+
+Moves:
+ClientA: D 5
+ClientB: D 5
+ClientA: D 6
+ClientB: A 2
+ClientA: A 1
+ClientB: D 6
+ClientA: A 2
+ClientB: A 1
+ClientA: J 10
+ClientB: B 2
+
