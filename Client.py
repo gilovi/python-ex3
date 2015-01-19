@@ -66,37 +66,36 @@ class Client:
         num, msg = Protocol.recv_all(self.socket_to_server)
         if num == Protocol.NetworkErrorCodes.FAILURE:
             sys.stderr.write(msg)
-            self.close_client()
+            self.close_client(1)
 
         if num == Protocol.NetworkErrorCodes.DISCONNECTED:
-            print "Server has closed connection."
-            self.close_client()
+            self.bye('disconnected')
 
         # send our name to server
         eNum, eMsg = Protocol.send_all(self.socket_to_server, sys.argv[3])
         if eNum:
             sys.stderr.write(eMsg)
-            self.close_client()
+            self.close_client(1)
 
         print "*** Connected to server on %s ***" % server_address[0]
         print
         print "Waiting for an opponent..."
         print
 
-    def close_client(self):
+    def close_client(self,err):
 
         self.socket_to_server.close()
 
         print
         print "*** Goodbye... ***"
-        exit(0)
+        exit(err)
 
     def __handle_standard_input(self):
 
         msg = sys.stdin.readline().strip().upper()
 
         if msg == 'EXIT':  # user wants to quit
-            self.close_client()
+            self.close_client(0)
 
         elif self.my_turn:
             self.send_attack(msg)
@@ -104,71 +103,94 @@ class Client:
             self.my_turn = False
 
     def __handle_server_request(self):
+	"""
+	handles all massages got from server
+	"""
 
         num, msg = Protocol.recv_all(self.socket_to_server)
         if num == Protocol.NetworkErrorCodes.FAILURE:
             sys.stderr.write(msg)
-            self.close_client()
+            self.close_client(1)
 
+		# the connection disconnected
         if num == Protocol.NetworkErrorCodes.DISCONNECTED:
-            print "Server has closed connection."
-            self.close_client()
+            self.bye('disconnected')
 
         if "start" in msg:
             self.__start_game(msg)
 
+
         elif msg:
             (who, what, data) = msg.split(':')
 
-            if what == 'EXIT':
-				print 'Your opponent has disconnected. You win!\n'
-				self.close_client()
+			# the othe side left
+            if data == 'EXIT' :
+                self.bye('other '+ data)
 
+			# a respond to my former attack or attacking me.
             if who == 'client':
-				result = {'attacking': self.defend,
+                result = {'attacking': self.defend,
                           'defending': self.update_result,
                           }.get(what)(data.upper())
 
-				if result:
-					self.send_defend(result)
-					self.my_turn = True
-					print
-					print self.opponent_name + ' plays: ' + data
-					self.print_board()
-					print "It's your turn..."
+				# result is the outcome from the other's attack.
+				#(if he didnt attacked in this message will be none)
+                if result:
+
+                    self.send_defend(result)
+                    self.my_turn = True
+                    print self.opponent_name + ' plays: ' + data
+                    self.print_board()
+
+					# iv'e lost ):
+                    if result == 'LOST':
+                        self.bye(result)
+                    else:
+                        print "It's your turn..."
                     
-				else:
-					self.print_board()
-                    # else: #its the server talking...
-                    # if  what == 'turn' :
-                    #         self.my_turn = True
-                    #         print "It's your turn..."
-                    #
-                    #     elif what == 'not_turn' : self.my_turn = False
+                else:
+                    self.print_board()
+            # the other tells us he lost the game... I guess we won.       
+            if data ==  'LOST':
+                self.bye('other '+ data)
+                self.print_board()
+
 
     def update_result(self, result):
+	"""
+	updates the other player's board in the my attack results
+	"""
         self.player.update_results(self.last_attack, result, self.player.op_board)
         return None
 
     def defend(self, place):
 
+	"""
+	updates the other attack results in my board and return the result
+	"""
         return self.player.defend(tuple(place.split(' ')))
 
+	"""
+	sends the results to other
+	"""
     def send_defend(self, result):
         msg = 'client:defending:' + result
 
         eNum, eMsg = Protocol.send_all(self.socket_to_server, msg)
         if eNum:
             sys.stderr.write(eMsg)
-            self.close_client()
+            self.close_client(1)
 
     def send_attack(self, place):
+	"""
+	sends my attack to other (incommiiiiiing!)
+	"""
         msg = 'client:attacking:' + place
 
         eNum, eMsg = Protocol.send_all(self.socket_to_server, msg)
         if eNum:
             sys.stderr.write(eMsg)
-            self.close_client()
+            self.close_client(1)
 
     def __start_game(self, msg):
 
@@ -194,12 +216,9 @@ class Client:
         op_hits = self.player.op_board.hits
         op_miss = self.player.op_board.miss
 
-        """
-        TODO: use this method for the prints of the board. You should figure
-        out how to modify it in order to properly display the right boards.
-        """
+
         print
-        print "%s %59s" % ("My Board:", self.opponent_name + "'s Board:"),
+        print "%s %56s" % ("My Board:", self.opponent_name + "'s Board:"),
 
         print
         print "%-3s" % "",
@@ -246,6 +265,18 @@ class Client:
             elif self.socket_to_server in r_sockets:
                 self.__handle_server_request()
 
+    def bye(self, reason):
+	"""
+	end of game method.
+	prints the things that need to be printed on end game...
+	"""
+        print {'disconnected' : "Server has closed connection.",
+               'LOST' : 'You lost :(',
+               'other EXIT' : 'Your opponent has disconnected. You win!',
+               'other LOST' : 'You won!'
+               }.get(reason)
+        self.close_client(0)
+
 
 def parse_ships(ship_path):
     ships = []
@@ -258,7 +289,7 @@ def parse_ships(ship_path):
                 match = re.match('([A-Z])(\d+)', place)
                 ship.add((match.group(1), match.group(2)))
             ships.append(ship)
-	return ships	
+    return ships
 
 def main():
     client = Client(sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4])

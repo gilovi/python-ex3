@@ -9,14 +9,26 @@ class Player:
         self.__name = name
         self.board = Board(ships)
         self.op_board = Board()
-
+        
+	
     def update_results(self, place, result, board, index=None):
+	"""
+	updates a given board (my board or the opponent's by a given result)
+	:param place: the place to update
+	:param result: the given result
+	:param board:the board to update
+	:param index: optional. the ship index which the place is part of
+	"""
         {'HIT': board.add_hit,
          'MISS': board.add_miss,
          'SUNK': board.sunk,
          'LOST': board.lost}.get(str(result))({place}, index)
-
+         
+	
     def defend(self, place):
+	"""
+	finds the result for an attack on place and updates the board with it
+	"""
         result = ''
         hit = [i for i, ship in enumerate(self.board.unhit_ships) if place in ship]
         if hit:
@@ -35,13 +47,14 @@ class Player:
 
 
 class Board:
+
     def __init__(self, ships=[]):
         self.ships = ships
         self.unhit_ships = deepcopy(self.ships)
         self.hits = set()
         self.miss = set()
 
-
+	
     def add_hit(self, place, index):
 
         """
@@ -59,7 +72,7 @@ class Board:
             if self.unhit_ships[index] == set([]):
                 self.unhit_ships.pop(index)
         else:
-            # its an opponents ship.
+            # its an opponent's ship.
             index = self.add_ship_pos(place)
 
         self.hits |= {place}
@@ -121,50 +134,11 @@ class Board:
     def get_adjacents(self, place):
         int_letter = ord(place[0])
         return list(product(map(chr, range(int_letter - 1, int_letter + 2)),
-			(map(chr, range(int(place[1]) - 1, int(place[1]) + 2)))))
-        # return [(chr(ord(place[0]) - 1), place[1]) ,(chr(ord(place[0]) + 1), place[1]) ,
-        # (place[0] , place[1] + 1), (place[0], place[1] - 1)]
-
+			(map(str, range(int(place[1]) - 1, int(place[1]) + 2)))))
+       
     def miss_surroundings(self, index):
         ship = self.ships[index]
         missed = {adj for place in ship for adj in self.get_adjacents(place) if
                   adj not in ship}
         self.add_miss(missed, None)
 
-
-        # def main():
-        # p = Player('gil',[{('A','1'),('A','2'),('A','3'),('B','2')},{('B','11'),('B','12')}])
-        #     #p.defend(('C',3))
-        #     #p.defend(('H',3))
-        #
-        #
-        #     print p.defend(('B','2'))
-        #     print p.defend(('B','11'))
-        #     print p.defend(('A','1'))
-        #     #print p.defend(('A','5'))
-        #     print p.defend(('A','2'))
-        #     print p.defend(('A','3'))
-        #     print 'unhit'
-        #     print p.board.unhit_ships
-        #     print'miss:'
-        #     print p.board.miss
-        #     print 'hits'
-        #     print p.board.hits
-        #     print 'ships'
-        #     print p.board.ships
-        #
-        #     p.update_results(('A',5),'miss',p.op_board)
-        #     p.update_results(('B',6),'hit',p.op_board)
-        #     p.update_results(('A',7),'hit',p.op_board)
-        #     p.update_results(('A',6),'sunk',p.op_board)
-        #     print 'unhut:'
-        #     print p.op_board.unhit_ships
-        #     print 'ships:'
-        #     print p.op_board.ships
-        #     print 'miss:'
-        #     print p.op_board.miss
-        #     print 'hits:'
-        #     print p.op_board.hits
-        #
-        # if __name__ == "__main__":
-        #     main()
